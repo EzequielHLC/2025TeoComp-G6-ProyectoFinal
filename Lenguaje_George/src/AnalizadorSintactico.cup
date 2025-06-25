@@ -1,0 +1,132 @@
+parser code {:
+  public void syntax_error(java_cup.runtime.Symbol s) {
+    System.err.printf(
+      "Error de sintaxis (línea %d, columna %d): token inesperado%n",
+      s.left, s.right
+    );
+  }
+
+  public void report_fatal_error(String message, Object info) {
+    if (info instanceof java_cup.runtime.Symbol) {
+      java_cup.runtime.Symbol s = (java_cup.runtime.Symbol) info;
+      System.err.printf(
+        "Error fatal (línea %d, columna %d): %s%n",
+        s.left, s.right, message
+      );
+    } else {
+      System.err.println("Error fatal: " + message);
+    }
+    try {
+      super.report_fatal_error(message, info);
+    } catch (Exception e) {
+      throw new RuntimeException("Error fatal no recuperable: " + message, e);
+    }
+  }
+:}; 
+
+//////////////////////////////////////////////////////////////////////////////
+//                             DEFINICIONES GRAMATICALES                     //
+//////////////////////////////////////////////////////////////////////////////
+
+/* === Terminales === */
+terminal PROCEDURE, END, REPEAT, UNTIL, FOR, FROM, TO, DO, IF, THEN, ELSE,
+         TRUE, FALSE, NOT, INT, LIST, RETURN;
+terminal ASIGNACION, IGUALDAD, DIFERENTE, MENORIGUAL, MAYORIGUAL, MENOR, MAYOR;
+terminal MAS, MENOS, POR, DIV;
+terminal PARI, PARD, CORI, CORD, COMA, PYC, DOSPUNTOS;
+terminal String ID;
+terminal String NUMERO;
+
+/* === No terminales === */
+non terminal programa, procedimientos, procedimiento,
+             parametros_opt, parametros, parametro;
+non terminal instrucciones, instruccion, else_opt;
+non terminal tipo, argumentos_opt, argumentos;
+non terminal expresion, llamada, acceso;
+
+/* === Precedencia y asociatividad === */
+precedence left IGUALDAD, DIFERENTE;
+precedence left MENOR, MAYOR, MENORIGUAL, MAYORIGUAL;
+precedence left MAS, MENOS;
+precedence left POR, DIV;
+precedence right NOT;
+
+start with programa;
+
+programa ::= procedimientos
+           ;
+
+procedimientos ::= procedimiento
+                 | procedimientos procedimiento
+                 ;
+
+procedimiento ::= PROCEDURE ID PARI parametros_opt PARD instrucciones END PYC
+               ;
+
+parametros_opt ::= parametros
+                 | /* vacío */
+                 ;
+
+parametros ::= parametro
+             | parametro COMA parametros
+             ;
+
+parametro ::= ID DOSPUNTOS tipo
+            ;
+
+tipo ::= INT
+       | LIST
+       ;
+
+instrucciones ::= instrucciones instruccion
+                | instruccion
+                ;
+
+instruccion ::= tipo ID PYC                               // declaración
+              | ID ASIGNACION expresion PYC               // asignación
+              | acceso ASIGNACION expresion PYC           // asignación por acceso
+              | llamada PYC                               // llamada a función
+              | RETURN expresion PYC                      // retorno
+              | IF expresion THEN instrucciones else_opt END PYC  // condicional
+              | REPEAT instrucciones UNTIL expresion PYC  // ciclo repeat
+              | FOR ID FROM expresion TO expresion DO instrucciones END PYC // ciclo for
+              ;
+
+else_opt ::= ELSE instrucciones
+           | /* vacío */
+           ;
+
+acceso ::= ID CORI expresion CORD
+         ;
+
+llamada ::= ID PARI argumentos_opt PARD
+          | LIST PARI argumentos_opt PARD
+          ;
+
+argumentos_opt ::= argumentos
+                 | /* vacío */
+                 ;
+
+argumentos ::= expresion
+             | expresion COMA argumentos
+             ;
+
+expresion ::= expresion MAS expresion
+            | expresion MENOS expresion
+            | expresion POR expresion
+            | expresion DIV expresion
+            | expresion IGUALDAD expresion
+            | expresion DIFERENTE expresion
+            | expresion MENOR expresion
+            | expresion MAYOR expresion
+            | expresion MENORIGUAL expresion
+            | expresion MAYORIGUAL expresion
+            | NOT expresion
+            | acceso
+            | llamada
+            | ID
+            | NUMERO
+            | TRUE
+            | FALSE
+            | PARI expresion PARD
+            ;

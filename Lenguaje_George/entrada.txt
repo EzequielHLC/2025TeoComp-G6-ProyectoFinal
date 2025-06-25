@@ -1,0 +1,30 @@
+procedure intercambiar(A : list, i : int, j : int)
+    list temp;
+    temp := A[i];
+    A[i] := A[j];
+    A[j] := temp;
+end;
+
+procedure ordenamientoBurbuja(A : list, n : int)
+    int i;
+    i := 0;
+    repeat
+        int j;
+        j := 1;
+        repeat
+            if A[j - 1] > A[j] then
+                intercambiar(A, j - 1, j);
+            end;
+            j := j + 1;
+        until j == n - i;
+        i := i + 1;
+    until i == n;
+end;
+
+procedure main()
+    list A;
+    int n;
+    A := list(5, 2, 4, 3, 1);
+    n := 5;
+    ordenamientoBurbuja(A, n);
+end;
